@@ -34,21 +34,6 @@
                             <ListItem>
                                 <PropertyName>ExtractedPath</PropertyName>
                             </ListItem>
-                            <ListItem>
-                                <PropertyName>AppVersion</PropertyName>
-                            </ListItem>
-                            <ListItem>
-                                <PropertyName>AppBuild</PropertyName>
-                            </ListItem>
-                            <ListItem>
-                                <PropertyName>Track</PropertyName>
-                            </ListItem>
-                            <ListItem>
-                                <PropertyName>PlatVersion</PropertyName>
-                            </ListItem>
-                            <ListItem>
-                                <PropertyName>PlatBuild</PropertyName>
-                            </ListItem>
                         </ListItems>
                     </ListEntry>
                 </ListEntries>
