@@ -161,6 +161,11 @@ function Get-UdeNuget {
 				"Build"          = $assetObj.Build
 				"PackageVersion" = $packageVersion
 				"Uri"            = $assetObj.Uri
+				"AppVersion"     = $assetObj.AppVersion
+				"AppBuild"       = $assetObj.AppBuild
+				"Track"          = $assetObj.Track
+				"PlatVersion"    = $assetObj.PlatVersion
+				"PlatBuild"      = $assetObj.PlatBuild
 			}
 
 			if ($null -ne $assetObj.Path) {

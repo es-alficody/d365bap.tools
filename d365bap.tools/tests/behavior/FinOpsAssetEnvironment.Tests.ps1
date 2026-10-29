@@ -73,6 +73,47 @@
 		Export-ModuleMember -Function Get-PpacFinOpsAsset
 	}
 	Import-Module $fixture -Force
+	$parityFixture = New-Module -Name UdeNugetParityFixture -ArgumentList $sourceRoot -ScriptBlock {
+		param($Root)
+		. (Join-Path $Root 'functions/Get-UdeNuget.ps1')
+		function Test-PSFFunctionInterrupt { $false }
+		$script:assetBuildSeen = @()
+		function Get-UnifiedEnvironment {
+			param($EnvironmentId)
+			[pscustomobject]@{
+				PpacEnvName = 'es-ude-motz-01'
+				PpacEnvUri  = 'https://example.invalid'
+				PpacProvApp = '10.0.2790.93'
+			}
+		}
+		function Get-PpacFinOpsAsset {
+			param($Build, $Asset, $Kind, $Path, $Download, $Force, $OutputPath)
+			$script:assetBuildSeen += "$Build"
+			$map = [ordered]@{
+				"CompilerPackage"  = "Microsoft.Dynamics.AX.Platform.CompilerPackage"
+				"Platform"         = "Microsoft.Dynamics.AX.Platform.DevALM.BuildXpp"
+				"ApplicationSuite" = "Microsoft.Dynamics.AX.ApplicationSuite.DevALM.BuildXpp"
+				"Application1"     = "Microsoft.Dynamics.AX.Application1.DevALM.BuildXpp"
+				"Application2"     = "Microsoft.Dynamics.AX.Application2.DevALM.BuildXpp"
+			}
+			foreach ($name in @($Asset)) {
+				[pscustomobject][Ordered]@{
+					"Asset"       = $name
+					"Kind"        = 'NuGet'
+					"FileName"    = "$($map[$name]).$Build.nupkg"
+					"Build"       = "$Build"
+					"Uri"         = "https://example.invalid/$name.nupkg?sig=abc"
+					"AppVersion"  = '10.0.49'
+					"AppBuild"    = '10.0.2790'
+					"Track"       = '10.0.2790'
+					"PlatVersion" = '7.0.8199'
+					"PlatBuild"   = '7.0.8199.60'
+				}
+			}
+		}
+		Export-ModuleMember -Function Get-UdeNuget
+	}
+	Import-Module $parityFixture -Force
 }
 
 Describe 'Get-PpacFinOpsAsset parameter sets' {
@@ -134,5 +175,24 @@ Describe 'Get-PpacFinOpsAsset environment build resolution' {
 		$uniqueBuilds = @($assets | Select-Object -ExpandProperty Build -Unique)
 		$uniqueBuilds.Count | Should -Be 1
 		$uniqueBuilds[0] | Should -Be '10.0.2790.105'
+	}
+}
+
+Describe 'Get-UdeNuget version parity with Get-PpacFinOpsAsset' {
+	It 'carries AppVersion, AppBuild, Track, PlatVersion and PlatBuild from the environment build' {
+		& (Get-Module UdeNugetParityFixture) { $script:assetBuildSeen = @() }
+		$packages = @(UdeNugetParityFixture\Get-UdeNuget -EnvironmentId 'es-ude-motz-01')
+		$packages.Count | Should -Be 5
+		foreach ($pkg in $packages) {
+			$pkg.Build | Should -Be '10.0.2790.93'
+			$pkg.AppVersion | Should -Be '10.0.49'
+			$pkg.AppBuild | Should -Be '10.0.2790'
+			$pkg.Track | Should -Be '10.0.2790'
+			$pkg.PlatVersion | Should -Be '7.0.8199'
+			$pkg.PlatBuild | Should -Be '7.0.8199.60'
+		}
+		$seen = @(& (Get-Module UdeNugetParityFixture) { $script:assetBuildSeen })
+		$seen.Count | Should -Be 1
+		$seen[0] | Should -Be '10.0.2790.93'
 	}
 }
