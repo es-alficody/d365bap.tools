@@ -18,6 +18,7 @@ on:
       - 'build/Test-Ps1TableFormatRule.ps1'
       - 'build/Test-Ps1ExcelOutputRule.ps1'
       - 'build/Test-Ps1AddMemberRule.ps1'
+      - 'build/Test-Ps1NullEscapeRule.ps1'
       - 'build/Test-PreloadExitCode.ps1'
       - 'build/Test-ModulePublication.ps1'
       - 'build/Publish-ModuleWithRetry.ps1'
@@ -84,6 +85,9 @@ jobs:
     - name: Test Add-Member lint rule
       shell: pwsh
       run: pwsh -NoProfile -NonInteractive -File ./build/Test-Ps1AddMemberRule.ps1
+    - name: Test discarded output lint rule
+      shell: pwsh
+      run: pwsh -NoProfile -NonInteractive -File ./build/Test-Ps1NullEscapeRule.ps1
     - name: Test module prerequisites
       shell: pwsh
       run: pwsh -NoProfile -NonInteractive -File ./build/Test-RequiredModules.ps1

@@ -12,7 +12,8 @@ What runs on `**.ps1`:
   `PSUseSupportsWildcards`, `PSAvoidEmptyParameterAttribute`,
   `PSUseValidateNotNullOrEmpty`, `PSAvoidShorthandMandatory`,
   `PSAvoidRedundantParameterArgument`, `PSAvoidExplicitParameterPosition`,
-  `PSUseTableFormatView`, `PSUseAsExcelOutput`, `PSAvoidAddMemberInLoop`.
+  `PSUseTableFormatView`, `PSUseAsExcelOutput`, `PSAvoidAddMemberInLoop`,
+  `PSUseNullRedirectionForDiscardedOutput`.
   Both alias rules are always on; the only way to permit an alias is a
   per-directory `ps1-lint.json` allowlist:
   `{"allowedCommandAliases": [], "allowedParameterAliases": ["PpacEnvId"]}`.
@@ -175,6 +176,42 @@ Run its regression checks under PowerShell 7.6 or later:
 
 ```powershell
 pwsh -NoProfile -NonInteractive -File build/Test-Ps1MandatoryRule.ps1
+```
+
+## Discarded output
+
+`PSUseNullRedirectionForDiscardedOutput` requires command and expression output
+that nobody uses to be redirected to `$null`:
+
+```powershell
+# Fails
+$null = Invoke-RestMethod -Method Post -Uri $uri
+New-Item -ItemType Directory -Path $path -Force | Out-Null
+[void]$list.Add($item)
+
+# Passes
+Invoke-RestMethod -Method Post -Uri $uri > $null
+New-Item -ItemType Directory -Path $path -Force > $null
+$list.Add($item) > $null
+```
+
+Microsoft's performance guidance puts `$null =`, `> $null`, and `[void]` within a
+few percent of each other, with `Out-Null` last. The repository standardises on
+`> $null` for readability, so one form covers commands and expressions.
+
+Assigning a property or a constant to `$null` is not output suppression and is
+not reported. Only the output stream counts. `2> $null`, `3> $null`, `4> $null`,
+and `6> $null` stay as they are because they suppress errors, warnings, verbose
+messages, and information messages. `*> $null` is not checked either: it
+redirects every stream and would hide errors.
+
+The rule runs on module functions and internal scripts. It only runs on changed
+files, so the remaining call sites migrate as their files are touched.
+
+Run its regression checks under PowerShell 7.6 or later:
+
+```powershell
+pwsh -NoProfile -NonInteractive -File build/Test-Ps1NullEscapeRule.ps1
 ```
 
 ## Example prose
