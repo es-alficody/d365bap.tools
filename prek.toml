@@ -96,3 +96,5 @@ id = "check-yaml"
 args = ["--allow-multiple-documents"]
 priority = 30
 stages = ["pre-commit", "manual"]
+
+# watcher live test: temporary protected-path change
