@@ -272,3 +272,5 @@
 
 	} # End of PrivateData hashtable
 }
+#region Measurement marker
+#endregion
