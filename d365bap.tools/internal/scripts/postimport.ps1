@@ -30,3 +30,6 @@ $moduleRoot = Split-Path (Split-Path $PSScriptRoot)
 "$moduleRoot\internal\scripts\sdk-completion.ps1"
 
 "$moduleRoot\internal\scripts\license.ps1"
+
+#region Baseline measurement
+#endregion
