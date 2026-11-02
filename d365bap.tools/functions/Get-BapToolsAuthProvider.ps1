@@ -25,3 +25,5 @@ function Get-BapToolsAuthProvider {
         Get-PSFConfigValue -FullName 'd365bap.tools.auth.provider' -Fallback 'AzAccount'
     }
 }
+#region Measurement marker
+#endregion
