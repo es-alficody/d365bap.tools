@@ -82,6 +82,9 @@ jobs:
         "variant=shallow-win merge-base-exit=$mbExit plan-produced=$([bool](Test-Path plan.json))" |
           Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
         if (Test-Path plan.json) { throw 'Shallow checkout unexpectedly produced a plan; the variant is not disproved.' }
+        # git merge-base exited non-zero above; that is the predicted outcome and
+        # the assertion is the two recorded values, so do not fail the job on it.
+        exit 0
 
   full-ubuntu:
     name: probe full history ubuntu
