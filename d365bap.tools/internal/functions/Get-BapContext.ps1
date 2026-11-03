@@ -7,7 +7,7 @@
     az account show handling.
 #>
 
-function Get-BapContext {
+ function Get-BapContext {
     <#
         .SYNOPSIS
             Gets the current Azure sign-in as a full context object.
