@@ -115,3 +115,4 @@ end {
 	Write-Output $strReason
 }
 # measurement sample 1
+# measurement sample 2
