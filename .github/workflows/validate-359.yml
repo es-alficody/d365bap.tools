@@ -12,10 +12,11 @@
 #     job results derived fail-closed in the result job (see below), so no gate
 #     policy is reimplemented.
 #
-# Driven by workflow_dispatch so the measured run graph does not depend on a pull
-# request diff: the workflow file lives on its own branch and every job checks out
-# inputs.head_sha, so the plan is computed over exactly the same base->head range
-# as the baseline sample it is paired with.
+# Triggered by pull_request because a fork cannot dispatch a workflow that is not
+# on its default branch, and pushing this file to main would start the cache-warm
+# and release workflows. The measured input is pinned in AUDIT_BASE_SHA /
+# AUDIT_HEAD_SHA instead of read from the event, so this branch's own diff never
+# enters a scope decision.
 name: validate-359
 
 on: [pull_request]
@@ -41,12 +42,12 @@ jobs:
     name: PS1 lint (vendored prek hooks, changed files)
     runs-on: windows-latest
     env:
-      BASE_SHA: ${{ env.AUDIT_BASE_SHA }}
+      BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
       ACTIONLINT_VERSION: v1.7.7
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: ${{ env.AUDIT_HEAD_SHA }}
+        ref: d54c93b42830c4e5b22c2f544b41e004146234db
         fetch-depth: 0
     - name: Check generated-file ownership
       shell: pwsh
@@ -55,8 +56,8 @@ jobs:
       id: lint_scope
       shell: pwsh
       env:
-        BASE_SHA: ${{ env.AUDIT_BASE_SHA }}
-        HEAD_SHA: ${{ env.AUDIT_HEAD_SHA }}
+        BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
+        HEAD_SHA: d54c93b42830c4e5b22c2f544b41e004146234db
       run: |
         ./build/Get-CiLintPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath lint-plan.json
         $plan = Get-Content -Raw lint-plan.json | ConvertFrom-Json
@@ -150,14 +151,14 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: ${{ env.AUDIT_HEAD_SHA }}
+        ref: d54c93b42830c4e5b22c2f544b41e004146234db
         fetch-depth: 0
     - name: Determine changes against PR base
       id: scope
       shell: pwsh
       env:
-        BASE_SHA: ${{ env.AUDIT_BASE_SHA }}
-        HEAD_SHA: ${{ env.AUDIT_HEAD_SHA }}
+        BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
+        HEAD_SHA: d54c93b42830c4e5b22c2f544b41e004146234db
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath validation-plan.json
         $plan = Get-Content -Raw validation-plan.json | ConvertFrom-Json
@@ -186,14 +187,14 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: ${{ env.AUDIT_HEAD_SHA }}
+        ref: d54c93b42830c4e5b22c2f544b41e004146234db
         fetch-depth: 0
     - name: Evaluate scope for this job
       id: scope
       shell: pwsh
       env:
-        BASE_SHA: ${{ env.AUDIT_BASE_SHA }}
-        HEAD_SHA: ${{ env.AUDIT_HEAD_SHA }}
+        BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
+        HEAD_SHA: d54c93b42830c4e5b22c2f544b41e004146234db
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath validation-plan.json
         $plan = Get-Content -Raw validation-plan.json | ConvertFrom-Json
@@ -229,14 +230,14 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: ${{ env.AUDIT_HEAD_SHA }}
+        ref: d54c93b42830c4e5b22c2f544b41e004146234db
         fetch-depth: 0
     - name: Evaluate scope for this job
       id: scope
       shell: pwsh
       env:
-        BASE_SHA: ${{ env.AUDIT_BASE_SHA }}
-        HEAD_SHA: ${{ env.AUDIT_HEAD_SHA }}
+        BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
+        HEAD_SHA: d54c93b42830c4e5b22c2f544b41e004146234db
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath validation-plan.json
         $plan = Get-Content -Raw validation-plan.json | ConvertFrom-Json
@@ -272,14 +273,14 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: ${{ env.AUDIT_HEAD_SHA }}
+        ref: d54c93b42830c4e5b22c2f544b41e004146234db
         fetch-depth: 0
     - name: Evaluate scope for this job
       id: scope
       shell: pwsh
       env:
-        BASE_SHA: ${{ env.AUDIT_BASE_SHA }}
-        HEAD_SHA: ${{ env.AUDIT_HEAD_SHA }}
+        BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
+        HEAD_SHA: d54c93b42830c4e5b22c2f544b41e004146234db
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath validation-plan.json
         $plan = Get-Content -Raw validation-plan.json | ConvertFrom-Json
@@ -315,14 +316,14 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: ${{ env.AUDIT_HEAD_SHA }}
+        ref: d54c93b42830c4e5b22c2f544b41e004146234db
         fetch-depth: 0
     - name: Evaluate scope for this job
       id: scope
       shell: pwsh
       env:
-        BASE_SHA: ${{ env.AUDIT_BASE_SHA }}
-        HEAD_SHA: ${{ env.AUDIT_HEAD_SHA }}
+        BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
+        HEAD_SHA: d54c93b42830c4e5b22c2f544b41e004146234db
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath validation-plan.json
         $plan = Get-Content -Raw validation-plan.json | ConvertFrom-Json
@@ -358,14 +359,14 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: ${{ env.AUDIT_HEAD_SHA }}
+        ref: d54c93b42830c4e5b22c2f544b41e004146234db
         fetch-depth: 0
     - name: Evaluate scope for this job
       id: scope
       shell: pwsh
       env:
-        BASE_SHA: ${{ env.AUDIT_BASE_SHA }}
-        HEAD_SHA: ${{ env.AUDIT_HEAD_SHA }}
+        BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
+        HEAD_SHA: d54c93b42830c4e5b22c2f544b41e004146234db
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath validation-plan.json
         $plan = Get-Content -Raw validation-plan.json | ConvertFrom-Json
@@ -401,14 +402,14 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: ${{ env.AUDIT_HEAD_SHA }}
+        ref: d54c93b42830c4e5b22c2f544b41e004146234db
         fetch-depth: 0
     - name: Evaluate scope for this job
       id: scope
       shell: pwsh
       env:
-        BASE_SHA: ${{ env.AUDIT_BASE_SHA }}
-        HEAD_SHA: ${{ env.AUDIT_HEAD_SHA }}
+        BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
+        HEAD_SHA: d54c93b42830c4e5b22c2f544b41e004146234db
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath validation-plan.json
         $plan = Get-Content -Raw validation-plan.json | ConvertFrom-Json
@@ -446,7 +447,7 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: ${{ env.AUDIT_HEAD_SHA }}
+        ref: d54c93b42830c4e5b22c2f544b41e004146234db
     - name: Derive fail-closed outcomes
       id: outcome
       shell: pwsh
