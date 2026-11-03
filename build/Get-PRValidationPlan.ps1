@@ -295,3 +295,4 @@ Write-Host "Validation scope: $scope ($($entries.Count) changed file(s))."
 Write-Host "Compatibility mode: $mode."
 Write-Host "Module tests: $isModuleTests; analyzer scans: $isAnalyzerScans; selective tests: $isSelectiveTests; compiled import: $isCompiledImport; infrastructure: $infrastructureChange."
 foreach ($reason in $colReasons) { Write-Host "  $reason" }
+# Baseline measurement marker: comment only, no behaviour change.
