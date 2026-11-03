@@ -1,4 +1,5 @@
-﻿
+﻿#region measure353
+
 <#
     .SYNOPSIS
         Gets the token minting provider used by d365bap.tools.
@@ -25,3 +26,4 @@ function Get-BapToolsAuthProvider {
         Get-PSFConfigValue -FullName 'd365bap.tools.auth.provider' -Fallback 'AzAccount'
     }
 }
+#endregion
