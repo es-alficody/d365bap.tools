@@ -5,7 +5,6 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { run, CHECK, ACCEPT, validateRevision } = require('./signature-approval.cjs');
-const { withSignatureDeltaSession, DELTA_SCRIPT } = require('./signature-delta-session.cjs');
 
 test('only full object IDs can be passed to Git', () => {
   for (const revision of ['a'.repeat(40), 'A'.repeat(64)]) assert.equal(validateRevision(revision), revision);
@@ -23,7 +22,7 @@ approvalTests({
   countLabel: 'Total declaration changes', reportPrefix: 'Signature',
 });
 
-test('declarations are compared from Git objects without executing source', async () => {
+test('declarations are compared from Git objects without executing source', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'signature-gate-'));
   const git = (...args) => execFileSync('git', args, { cwd: directory, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   const write = (name, content) => {
@@ -41,52 +40,43 @@ test('declarations are compared from Git objects without executing source', asyn
     write(source, '\ufeff' + original);
     write(manifest, '\ufeff@{ FunctionsToExport = @("Get-Example"); AliasesToExport = @(); ModuleVersion = "1.0" }');
     const base = commit();
-    // Real subprocess contract check, kept outside the batched session.
-    const direct = () => execFileSync('pwsh', [
-      '-NoProfile', '-File', DELTA_SCRIPT, '-BaseRef', base, '-HeadRef', 'HEAD',
-    ], { cwd: directory, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-    assert.deepEqual(JSON.parse(direct()).changes, [], 'unchanged fixture exits zero with no changes');
+    const compare = () => JSON.parse(execFileSync('pwsh', [
+      '-NoProfile', '-File', path.join(__dirname, 'Get-SignatureDelta.ps1'), '-BaseRef', base, '-HeadRef', 'HEAD',
+    ], { cwd: directory, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })).changes;
 
-    await withSignatureDeltaSession(directory, async session => {
-      const compare = async () => (await session.request(base, 'HEAD')).changes;
+    write(source, original.replace('process { $Name }', 'process { throw "do not execute" }').replace('param(', '# help\n param (\n'));
+    write('d365bap.tools/tests/functions/Get-Example.Tests.ps1', 'regenerated test');
+    commit(); assert.deepEqual(compare(), [], 'body, formatting, BOM, comments and generated tests are ignored');
 
-      write(source, original.replace('process { $Name }', 'process { throw "do not execute" }').replace('param(', '# help\n param (\n'));
-      write('d365bap.tools/tests/functions/Get-Example.Tests.ps1', 'regenerated test');
-      commit(); assert.deepEqual(await compare(), [], 'body, formatting, BOM, comments and generated tests are ignored');
+    for (const declaration of [
+      '[string]$Name = "hello", [switch]$AsExcelOutput',
+      '[int]$Name = 1',
+      '[string]$Name = "new default"',
+      '[Alias("OldName")][string]$Name = "hello"',
+      '[Parameter(Mandatory, Position=0, ValueFromPipeline, ParameterSetName="New")][string]$Name = "hello"',
+    ]) {
+      write(source, `function Get-Example { [CmdletBinding()] param(${declaration}) }`);
+      commit(); assert.equal(compare().length, 1, declaration);
+    }
 
-      for (const declaration of [
-        '[string]$Name = "hello", [switch]$AsExcelOutput',
-        '[int]$Name = 1',
-        '[string]$Name = "new default"',
-        '[Alias("OldName")][string]$Name = "hello"',
-        '[Parameter(Mandatory, Position=0, ValueFromPipeline, ParameterSetName="New")][string]$Name = "hello"',
-      ]) {
-        write(source, `function Get-Example { [CmdletBinding()] param(${declaration}) }`);
-        commit(); assert.equal((await compare()).length, 1, declaration);
-      }
+    write(source, original.replace('[CmdletBinding()]', '[CmdletBinding(SupportsShouldProcess)]'));
+    commit(); assert.equal(compare().length, 1, 'binding attributes are tracked');
+    write(source, original.replace('process { $Name }', 'dynamicparam { throw "never run" } process { $Name }'));
+    commit(); assert.equal(compare().length, 1, 'dynamic parameters are tracked without executing them');
 
-      write(source, original.replace('[CmdletBinding()]', '[CmdletBinding(SupportsShouldProcess)]'));
-      commit(); assert.equal((await compare()).length, 1, 'binding attributes are tracked');
-      write(source, original.replace('process { $Name }', 'dynamicparam { throw "never run" } process { $Name }'));
-      commit(); assert.equal((await compare()).length, 1, 'dynamic parameters are tracked without executing them');
+    write(source, original);
+    write(manifest, '@{ FunctionsToExport = @(); AliasesToExport = @(); ModuleVersion = "1.0" }');
+    commit(); assert.equal(compare()[0].name, 'manifest/FunctionsToExport');
 
-      write(source, original);
-      write(manifest, '@{ FunctionsToExport = @(); AliasesToExport = @(); ModuleVersion = "1.0" }');
-      commit(); assert.equal((await compare())[0].name, 'manifest/FunctionsToExport');
+    write(manifest, '@{ FunctionsToExport = @("Get-Example"); AliasesToExport = @(); ModuleVersion = "2.0" }');
+    write('d365bap.tools/functions/Get-New.ps1', 'function Get-New { param() }');
+    commit(); assert.equal(compare()[0].before, null, 'new commands require acceptance');
+    fs.unlinkSync(path.join(directory, 'd365bap.tools/functions/Get-New.ps1'));
+    fs.unlinkSync(path.join(directory, source));
+    commit(); assert.equal(compare()[0].after, null, 'removed commands require acceptance');
 
-      write(manifest, '@{ FunctionsToExport = @("Get-Example"); AliasesToExport = @(); ModuleVersion = "2.0" }');
-      write('d365bap.tools/functions/Get-New.ps1', 'function Get-New { param() }');
-      commit(); assert.equal((await compare())[0].before, null, 'new commands require acceptance');
-      fs.unlinkSync(path.join(directory, 'd365bap.tools/functions/Get-New.ps1'));
-      fs.unlinkSync(path.join(directory, source));
-      commit(); assert.equal((await compare())[0].after, null, 'removed commands require acceptance');
-
-      write(source, 'function Get-Example { param(');
-      commit();
-      // Both the real subprocess exit path and the session path fail closed.
-      assert.throws(direct, /Cannot parse/, 'invalid source fails closed in a real subprocess');
-      await assert.rejects(compare(), /Cannot parse/, 'invalid source fails closed');
-    });
+    write(source, 'function Get-Example { param(');
+    commit(); assert.throws(compare, /Cannot parse/, 'invalid source fails closed');
   } finally {
     assert.equal(path.dirname(directory), os.tmpdir());
     assert.ok(path.basename(directory).startsWith('signature-gate-'));
