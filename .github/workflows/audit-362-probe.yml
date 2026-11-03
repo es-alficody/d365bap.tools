@@ -1,0 +1,92 @@
+name: audit-362-probe
+
+# Measurement probe for issue #362 (checkout and runner alternatives).
+# Not part of PR validation. Push-triggered on one audit branch so each push is
+# exactly one sample of every variant, in the same minute, on the same input.
+
+on:
+  push:
+    branches: [audit/362-runners]
+
+permissions:
+  contents: read
+
+env:
+  AUDIT_BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
+  AUDIT_HEAD_SHA: d54c93b42830c4e5b22c2f544b41e004146234db
+
+jobs:
+  full-win:
+    name: probe full history windows
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+    - name: Plan
+      shell: pwsh
+      run: |
+        ./build/Get-PRValidationPlan.ps1 -BaseSha $env:AUDIT_BASE_SHA -HeadSha $env:AUDIT_HEAD_SHA -OutputPath plan.json
+        $p = Get-Content -Raw plan.json | ConvertFrom-Json
+        "scope=$($p.Scope)" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+
+  anc-win:
+    name: probe ancestry-limited windows
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        fetch-depth: 1
+    - name: Ancestry-limited fetch
+      shell: pwsh
+      run: |
+        git fetch --no-tags --no-recurse-submodules origin `
+          "+$env:AUDIT_BASE_SHA`:refs/remotes/audit/base" `
+          "+$env:AUDIT_HEAD_SHA`:refs/remotes/audit/head"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    - name: Plan
+      shell: pwsh
+      run: |
+        ./build/Get-PRValidationPlan.ps1 -BaseSha $env:AUDIT_BASE_SHA -HeadSha $env:AUDIT_HEAD_SHA -OutputPath plan.json
+        $p = Get-Content -Raw plan.json | ConvertFrom-Json
+        "scope=$($p.Scope)" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+
+  shallow-win:
+    name: probe shallow windows expected failure
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        fetch-depth: 1
+    - name: Shallow fetch of the two commits
+      shell: pwsh
+      run: |
+        git fetch --no-tags --depth=1 --no-recurse-submodules origin `
+          "+$env:AUDIT_BASE_SHA`:refs/remotes/audit/base" `
+          "+$env:AUDIT_HEAD_SHA`:refs/remotes/audit/head"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    - name: Plan, expected to fail on merge-base
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+        ./build/Get-PRValidationPlan.ps1 -BaseSha $env:AUDIT_BASE_SHA -HeadSha $env:AUDIT_HEAD_SHA -OutputPath plan.json 2>&1 |
+          Tee-Object -FilePath plan-attempt.log
+        $code = $LASTEXITCODE
+        $mb = (git merge-base $env:AUDIT_BASE_SHA $env:AUDIT_HEAD_SHA 2>&1 | Out-String).Trim()
+        "merge-base-exit=$LASTEXITCODE plan-exit=$code merge-base=[$mb]" |
+          Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+        if ($code -eq 0) { throw 'Shallow checkout unexpectedly produced a plan; the variant is not disproved.' }
+
+  full-ubuntu:
+    name: probe full history ubuntu
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        fetch-depth: 0
+    - name: Plan
+      shell: pwsh
+      run: |
+        ./build/Get-PRValidationPlan.ps1 -BaseSha $env:AUDIT_BASE_SHA -HeadSha $env:AUDIT_HEAD_SHA -OutputPath plan.json
+        $p = Get-Content -Raw plan.json | ConvertFrom-Json
+        "scope=$($p.Scope)" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
