@@ -448,8 +448,7 @@ jobs:
     - uses: actions/checkout@v5
       with:
         ref: d54c93b42830c4e5b22c2f544b41e004146234db
-    - name: Derive fail-closed outcomes
-      id: outcome
+    - name: Verify all required jobs ran and passed
       shell: pwsh
       env:
         LINT_R: ${{ needs.lint.result }}
@@ -466,30 +465,6 @@ jobs:
         SELECTIVE_RAN: ${{ needs.selective-tests.outputs.ran }}
         COMPILED_R: ${{ needs.compiled-import.result }}
         COMPILED_RAN: ${{ needs.compiled-import.outputs.ran }}
-      run: |
-        # A job that did not conclude 'success' keeps its own conclusion. A job that
-        # concluded success maps to 'success' when it reported ran=true and to
-        # 'skipped' when it reported ran=false. A missing ran value maps to 'missing'
-        # so the unchanged gate fails closed instead of reading absent as skipped.
-        function ConvertTo-Reported([string] $Result, [string] $Ran) {
-          if ($Result -cne 'success') { return $Result }
-          if ($Ran -ceq 'true') { return 'success' }
-          if ($Ran -ceq 'false') { return 'skipped' }
-          return 'missing'
-        }
-        "lint=$(ConvertTo-Reported $env:LINT_R 'true')" >> $env:GITHUB_OUTPUT
-        "change=$(ConvertTo-Reported $env:CHANGE_R 'true')" >> $env:GITHUB_OUTPUT
-        "general=$(ConvertTo-Reported $env:GENERAL_R $env:GENERAL_RAN)" >> $env:GITHUB_OUTPUT
-        "public=$(ConvertTo-Reported $env:PUBLIC_R $env:PUBLIC_RAN)" >> $env:GITHUB_OUTPUT
-        "internal=$(ConvertTo-Reported $env:INTERNAL_R $env:INTERNAL_RAN)" >> $env:GITHUB_OUTPUT
-        "infrastructure=$(ConvertTo-Reported $env:INFRA_R $env:INFRA_RAN)" >> $env:GITHUB_OUTPUT
-        "selective=$(ConvertTo-Reported $env:SELECTIVE_R $env:SELECTIVE_RAN)" >> $env:GITHUB_OUTPUT
-        "compiled=$(ConvertTo-Reported $env:COMPILED_R $env:COMPILED_RAN)" >> $env:GITHUB_OUTPUT
-    - name: Verify all required jobs ran and passed
-      shell: pwsh
-      env:
-        LINT: ${{ steps.outcome.outputs.lint }}
-        CHANGE_RESULT: ${{ steps.outcome.outputs.change }}
         SCOPE: ${{ needs.changes.outputs.scope }}
         MODULE_TESTS: ${{ needs.changes.outputs.module_tests }}
         ANALYZER_SCANS: ${{ needs.changes.outputs.analyzer_scans }}
@@ -501,13 +476,27 @@ jobs:
         COMPILED_HASH: ${{ needs.compiled-import.outputs.plan_hash }}
         SELECTIVE_SCOPE: ${{ needs.selective-tests.outputs.scope }}
         COMPILED_SCOPE: ${{ needs.compiled-import.outputs.scope }}
-        GENERAL: ${{ steps.outcome.outputs.general }}
-        PUBLIC: ${{ steps.outcome.outputs.public }}
-        INTERNAL: ${{ steps.outcome.outputs.internal }}
-        INFRASTRUCTURE_RESULT: ${{ steps.outcome.outputs.infrastructure }}
-        SELECTIVE: ${{ steps.outcome.outputs.selective }}
-        COMPILED: ${{ steps.outcome.outputs.compiled }}
       run: |
+        # The gate is build/Invoke-ValidationResultGate.ps1, unchanged. Only the
+        # job-result values it is given are derived here, fail-closed:
+        #   conclusion not 'success' -> that conclusion (failure/cancelled/skipped)
+        #   success + ran=true        -> success
+        #   success + ran=false       -> skipped (scope did not require the suite)
+        #   success + ran missing     -> missing (the gate rejects it)
+        function ConvertTo-Reported([string] $Result, [string] $Ran) {
+          if ($Result -cne 'success') { return $Result }
+          if ($Ran -ceq 'true') { return 'success' }
+          if ($Ran -ceq 'false') { return 'skipped' }
+          return 'missing'
+        }
+        $env:LINT = ConvertTo-Reported $env:LINT_R 'true'
+        $env:CHANGE_RESULT = ConvertTo-Reported $env:CHANGE_R 'true'
+        $env:GENERAL = ConvertTo-Reported $env:GENERAL_R $env:GENERAL_RAN
+        $env:PUBLIC = ConvertTo-Reported $env:PUBLIC_R $env:PUBLIC_RAN
+        $env:INTERNAL = ConvertTo-Reported $env:INTERNAL_R $env:INTERNAL_RAN
+        $env:INFRASTRUCTURE_RESULT = ConvertTo-Reported $env:INFRA_R $env:INFRA_RAN
+        $env:SELECTIVE = ConvertTo-Reported $env:SELECTIVE_R $env:SELECTIVE_RAN
+        $env:COMPILED = ConvertTo-Reported $env:COMPILED_R $env:COMPILED_RAN
         ./build/Invoke-ValidationResultGate.ps1 `
           -Lint $env:LINT `
           -ChangeResult $env:CHANGE_RESULT `
