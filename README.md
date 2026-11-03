@@ -303,3 +303,4 @@ node --test build/signature-approval.test.cjs build/internal-hook-approval.test.
 ## Dependencies
 
 This module depends on other modules. The dependencies are documented in the [dependency graph](https://github.com/d365collaborative/d365bap.tools/network/dependencies) and the Dependencies section of the Package Details of the [package listing](https://www.powershellgallery.com/packages/d365bap.tools) in the PowerShell Gallery.
+# Baseline measurement marker: comment only, no behaviour change.
