@@ -27,8 +27,8 @@ on: [pull_request]
 # workflow file) never enters a scope decision.
 env:
   AUDIT_BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
-  AUDIT_HEAD_SHA: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
-  AUDIT_SHAPE: B
+  AUDIT_HEAD_SHA: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
+  AUDIT_SHAPE: C
 
 permissions:
   contents: read
@@ -47,7 +47,7 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        ref: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
         fetch-depth: 0
     - name: Check generated-file ownership
       shell: pwsh
@@ -57,7 +57,7 @@ jobs:
       shell: pwsh
       env:
         BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
-        HEAD_SHA: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        HEAD_SHA: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
       run: |
         ./build/Get-CiLintPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath lint-plan.json
         $plan = Get-Content -Raw lint-plan.json | ConvertFrom-Json
@@ -151,14 +151,14 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        ref: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
         fetch-depth: 0
     - name: Determine changes against PR base
       id: scope
       shell: pwsh
       env:
         BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
-        HEAD_SHA: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        HEAD_SHA: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath validation-plan.json
         $plan = Get-Content -Raw validation-plan.json | ConvertFrom-Json
@@ -187,14 +187,14 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        ref: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
         fetch-depth: 0
     - name: Evaluate scope for this job
       id: scope
       shell: pwsh
       env:
         BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
-        HEAD_SHA: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        HEAD_SHA: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath validation-plan.json
         $plan = Get-Content -Raw validation-plan.json | ConvertFrom-Json
@@ -230,14 +230,14 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        ref: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
         fetch-depth: 0
     - name: Evaluate scope for this job
       id: scope
       shell: pwsh
       env:
         BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
-        HEAD_SHA: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        HEAD_SHA: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath validation-plan.json
         $plan = Get-Content -Raw validation-plan.json | ConvertFrom-Json
@@ -273,14 +273,14 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        ref: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
         fetch-depth: 0
     - name: Evaluate scope for this job
       id: scope
       shell: pwsh
       env:
         BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
-        HEAD_SHA: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        HEAD_SHA: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath validation-plan.json
         $plan = Get-Content -Raw validation-plan.json | ConvertFrom-Json
@@ -316,14 +316,14 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        ref: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
         fetch-depth: 0
     - name: Evaluate scope for this job
       id: scope
       shell: pwsh
       env:
         BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
-        HEAD_SHA: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        HEAD_SHA: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath validation-plan.json
         $plan = Get-Content -Raw validation-plan.json | ConvertFrom-Json
@@ -359,14 +359,14 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        ref: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
         fetch-depth: 0
     - name: Evaluate scope for this job
       id: scope
       shell: pwsh
       env:
         BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
-        HEAD_SHA: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        HEAD_SHA: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath validation-plan.json
         $plan = Get-Content -Raw validation-plan.json | ConvertFrom-Json
@@ -402,14 +402,14 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        ref: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
         fetch-depth: 0
     - name: Evaluate scope for this job
       id: scope
       shell: pwsh
       env:
         BASE_SHA: d98b30f1023c85f7d2121e1eb32d67143a1cf669
-        HEAD_SHA: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        HEAD_SHA: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:BASE_SHA -HeadSha $env:HEAD_SHA -OutputPath validation-plan.json
         $plan = Get-Content -Raw validation-plan.json | ConvertFrom-Json
@@ -447,7 +447,7 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
-        ref: 7d10b89e0065378b494c76aaa59a0145fbcfa86c
+        ref: ca02d5c321a0a3d37a9a01535f809a2eb85688cd
     - name: Verify all required jobs ran and passed
       shell: pwsh
       env:
