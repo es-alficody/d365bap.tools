@@ -3,3 +3,6 @@
 @{
 	'key' = 'Value'
 }
+#region Baseline measurement marker: comment only, no behaviour change.
+
+#endregion Baseline measurement marker: comment only, no behaviour change.

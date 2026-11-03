@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Configuration>
+  <!-- Baseline measurement marker: comment only, no behaviour change. -->
   <ViewDefinitions>
     <View>
             <Name>D365Bap.Tools.BapD365App</Name>

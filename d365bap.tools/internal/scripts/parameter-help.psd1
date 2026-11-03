@@ -26,3 +26,6 @@ It can also be the LCS environment id, as shown in the Lifecycle Services projec
 The excel file will open automatically once generated. You need to save the file from inside Excel if you want to keep it.'
     }
 }
+#region Baseline measurement marker: comment only, no behaviour change.
+
+#endregion Baseline measurement marker: comment only, no behaviour change.
