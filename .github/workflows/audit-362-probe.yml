@@ -28,7 +28,8 @@ jobs:
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:AUDIT_BASE_SHA -HeadSha $env:AUDIT_HEAD_SHA -OutputPath plan.json
         $p = Get-Content -Raw plan.json | ConvertFrom-Json
-        "scope=$($p.Scope)" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+        Write-Host "AUDIT-SCOPE scope=$($p.Scope)"
+        "variant=full-win scope=$($p.Scope)" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
 
   anc-win:
     name: probe ancestry-limited windows
@@ -44,12 +45,14 @@ jobs:
           "+$env:AUDIT_BASE_SHA`:refs/remotes/audit/base" `
           "+$env:AUDIT_HEAD_SHA`:refs/remotes/audit/head"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        git rev-list --count refs/remotes/audit/head
     - name: Plan
       shell: pwsh
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:AUDIT_BASE_SHA -HeadSha $env:AUDIT_HEAD_SHA -OutputPath plan.json
         $p = Get-Content -Raw plan.json | ConvertFrom-Json
-        "scope=$($p.Scope)" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+        Write-Host "AUDIT-SCOPE scope=$($p.Scope)"
+        "variant=anc-win scope=$($p.Scope)" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
 
   shallow-win:
     name: probe shallow windows expected failure
@@ -69,13 +72,16 @@ jobs:
       shell: pwsh
       run: |
         $ErrorActionPreference = 'Continue'
-        ./build/Get-PRValidationPlan.ps1 -BaseSha $env:AUDIT_BASE_SHA -HeadSha $env:AUDIT_HEAD_SHA -OutputPath plan.json 2>&1 |
-          Tee-Object -FilePath plan-attempt.log
-        $code = $LASTEXITCODE
+        $planExit = 0
+        try { ./build/Get-PRValidationPlan.ps1 -BaseSha $env:AUDIT_BASE_SHA -HeadSha $env:AUDIT_HEAD_SHA -OutputPath plan.json }
+        catch { $planExit = 1; Write-Host "PLAN-THREW $($_.Exception.Message)" }
+        if (Test-Path plan.json) { $planExit = 0 }
         $mb = (git merge-base $env:AUDIT_BASE_SHA $env:AUDIT_HEAD_SHA 2>&1 | Out-String).Trim()
-        "merge-base-exit=$LASTEXITCODE plan-exit=$code merge-base=[$mb]" |
+        $mbExit = $LASTEXITCODE
+        Write-Host "AUDIT-SHALLOW merge-base-exit=$mbExit plan-produced=$([bool](Test-Path plan.json)) error=[$mb]"
+        "variant=shallow-win merge-base-exit=$mbExit plan-produced=$([bool](Test-Path plan.json))" |
           Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
-        if ($code -eq 0) { throw 'Shallow checkout unexpectedly produced a plan; the variant is not disproved.' }
+        if (Test-Path plan.json) { throw 'Shallow checkout unexpectedly produced a plan; the variant is not disproved.' }
 
   full-ubuntu:
     name: probe full history ubuntu
@@ -89,4 +95,5 @@ jobs:
       run: |
         ./build/Get-PRValidationPlan.ps1 -BaseSha $env:AUDIT_BASE_SHA -HeadSha $env:AUDIT_HEAD_SHA -OutputPath plan.json
         $p = Get-Content -Raw plan.json | ConvertFrom-Json
-        "scope=$($p.Scope)" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+        Write-Host "AUDIT-SCOPE scope=$($p.Scope)"
+        "variant=full-ubuntu scope=$($p.Scope)" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
