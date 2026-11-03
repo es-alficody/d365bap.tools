@@ -1,0 +1,50 @@
+name: audit-362-portability
+
+# One-shot portability probe for issue #362. Not part of PR validation.
+# Answers: does the module import and can the general suite run on a Linux
+# runner at all? No timing claim is taken from this workflow.
+
+on:
+  push:
+    branches: [audit/362-portability]
+
+permissions:
+  contents: read
+
+jobs:
+  module-on-ubuntu:
+    name: probe module import and general suite on ubuntu
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        fetch-depth: 1
+    - name: Environment
+      shell: pwsh
+      run: |
+        "pwsh=$($PSVersionTable.PSVersion) os=$($IsLinux) platform=$($IsWindows)" |
+          Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+        git --version
+    - name: Install required modules
+      shell: pwsh
+      run: |
+        ./build/Install-RequiredModules.ps1 -Set base
+    - name: Import the module
+      shell: pwsh
+      run: |
+        $m = Import-Module ./d365bap.tools/d365bap.tools.psd1 -Force -PassThru
+        $exported = @(Get-Command -Module d365bap.tools).Count
+        "module-imported=$($m.Name) version=$($m.Version) commands=$exported" |
+          Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+    - name: General suite, Windows-only tests excluded
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Continue'
+        build/vsts-validate-v2.ps1 -TestGeneral $true -TestFunctions $false -Exclude "PSScriptAnalyzer.Tests.ps1" 2>&1 |
+          Tee-Object -FilePath suite.log
+        "suite-exit=$LASTEXITCODE" | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
+    - name: Suite result tail
+      if: always()
+      shell: pwsh
+      run: |
+        Get-Content suite.log -Tail 40 | Tee-Object -FilePath $env:GITHUB_STEP_SUMMARY -Append
